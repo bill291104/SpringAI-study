@@ -82,7 +82,7 @@ ChatClient chatClient = ChatClient.create(myChatModel);
 // Or use the builder for more control
 ChatClient.Builder builder = ChatClient.builder(myChatModel);
 ChatClient customChatClient = builder
-    .defaultSystemPrompt("You are a helpful assistant.")
+    .defaultSystem("You are a helpful assistant.")
     .build();
 ```
 ##### ChatClients for Different Model Types
@@ -403,7 +403,7 @@ ChatClient.Builder 레벨에서 프롬프트 기본 설정을 조정할 수 있�
 - `defaultAdvisors(Advisor... advisor)`: Advisor 는 Prompt 를 만들 때 사용하는 데이터를 변환할 수 있게 해준다. QuestionAnswerAdvisor 구현체는 RAG 에서 관련 정보를 user text 에 이어 붙인다.
 - `defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer)`: 좀더 복잡한 Advisor 설정을 위해 사용.
 
-대응되는 메서드를 사용해서 default 접두사 없이 런타임에 오버리이딩 할 수 있다.
+default 접두사 없는 대응되는 메서드를 사용해서 런타임에 기본값을 덮어쓰기 할 수 있다.
 
 - `optoins(ChatOptions chatOptions)`
 - `function(String name, String description, Function<I, O> function)`
@@ -413,3 +413,92 @@ ChatClient.Builder 레벨에서 프롬프트 기본 설정을 조정할 수 있�
 - `advisors(Consumer<AdvisorSpec> advisorSpecConsumer)`
 
 #### Advisors
+Advisor API 는 Spring 어플리케이션과 AI 와의 상호작용을 조정하는 기능을 제공한다.
+보통 AI 모델을 호출할 때 user text 는 프롬프트에 이어붙이거나 문맥을 강화하는데 사용된다. 
+문맥이라는 데이터는 보통 다음과같은 타입이 있다:
+- **나만의 데이터**: AI 모델이 학습한적 없는 데이터. 
+- **대화 내역**: chat model API 는 stateless 이다. 따라서 대화 내역을 전부 모델에게 전달해야 문맥을 파악할 수 있다.
+
+##### Advisor Configuration in ChatClient
+ChatClient API 는 AdvisorSpec 인터페이스를 제공한다.
+이 인터페이스는 파라미터를 추가하거나 체인에 여러 advisor 를 추가하는 메서드를 제공한다.
+```java
+interface AdvisorSpec {
+    AdvisorSpec param(String k, Object v);
+    AdvisorSpec params(Map<String, Object> p);
+    AdvisorSpec advisors(Advisor... advisors);
+    AdvisorSpec advisors(List<Advisor> advisors);
+}
+```
+
+> IMPORTANT
+> 실행되는 순서가 정해지기 때문에 advisor 를 추가하는 순서가 중요하다.
+> 이전 advisor 가 만든 차이가 그대로 다음 체인으로 전달된다.
+
+```java
+ChatClient.builder(chatModel)
+    .build()
+    .prompt()
+    .advisors(
+        MessageChatMemoryAdvisor.builder(chatMemory).build(),
+        QuestionAnswerAdvisor.builder(vectorStore).build()
+    )
+    .user(userText)
+    .call()
+    .content();
+```
+이 설정대로면 MessageChatMemoryAdvisor 가 먼저 실행되고 그다음 QuestionAnswerAdvisor 가 실행된다.
+
+##### RAG
+RAG 문서를 참고
+
+##### Logging
+SimpleLoggerAdvisor 는 ChatClient 의 request 와 response 데이터를 로깅해준다.
+AI 모니터링이나 디버깅에 유용하다.
+
+> TIP
+> Spring AI 는 LLM 이나 vector store 의 상호작용을 관찰할 수 있도록 지원한다.
+> Observability 문서를 참고
+
+로깅을 활성화하려면 ChatClient 를 생성할 때 SimpleLoggerAdvisor 를 advisor 체인에 추가하면 된다.
+로깅하는 advisor 는 다른 advisor 을 모두 추가하고 가장 마지막에 추가하는게 좋다.
+```java
+ChatResponse response = ChatClient.create(chatModel).prompt()
+        .advisors(new SimpleLoggerAdvisor())
+        .user("Tell me a joke?")
+        .call()
+        .chatResponse();
+```
+로그를 보려면 로깅 레벨을 DEBUG 로 하면 된다.
+```
+logging.level.org.springframework.ai.chat.client.advisor=DEBUG
+```
+AdvisedRequest 나 ChatResponse 에서 어떤 데이터를 로깅할지 커스텀 할 수도 있다.
+이 생성자를 사용:
+```java
+SimpleLoggerAdvisor(
+    Function<ChatClientRequest, String> requestToString,
+    Function<ChatResponse, String> responseToString,
+    int order
+)
+```
+```java
+SimpleLoggerAdvisor customLogger = new SimpleLoggerAdvisor(
+    request -> "Custom request: " + request.prompt().getUserMessage(),
+    response -> "Custom response: " + response.getResult(),
+    0
+);
+```
+> TIP
+> 실제 프로덕션 환경에서는 민감 정보 로깅에 주의
+
+#### Chat Memory
+ChatMemory 인터페이스는 대화 내용 기억을 위한 저장공간이다.
+메시지를 추가, 조회, 삭제 하는 메서드를 제공한다.
+지금은 구현체가 MessageWindowChatMemory 하나뿐이다.
+MessageWindowChatMemory 는 메시지 윈도우를 특정 최대 크기(기본 20)로 관리해준다.
+윈도우 사이즈를 넘어가면 오래된 메시지 부터 삭제되지만 시스템 메시지는 남아있다.
+시스템 메시지가 업데이트되면 이전 시스템 메시지는 삭제된다.
+이렇게 하면 메모리 사용은 제한하면서 문맥의 최신화는 보장할 수 있다.
+MessageWindowChatMemory 는 ChatMemoryRepository 추상클래스에 의존한다.
+그 구현체는 InMemoryChatMemoryRepository, JdbcChatMemoryRepository, CassandraChatMemoryRepository, Neo4jChatMemoryRepository 등이 있다.
