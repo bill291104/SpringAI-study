@@ -1,0 +1,37 @@
+package com.fastcampus.springai.controller;
+
+import com.fastcampus.springai.service.MultipleChatClientsWithSingleModelTypeService;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+public class AiController {
+    private final ChatClient chatClient;
+
+    private final MultipleChatClientsWithSingleModelTypeService multipleChatClientsWithSingleModelTypeService;
+
+//    public MyController(ChatClient.Builder chatClientBuilder) {
+//        this.chatClient = chatClientBuilder.build();
+//    }
+    public AiController(ChatModel chatModel,  MultipleChatClientsWithSingleModelTypeService multipleChatClientsWithSingleModelTypeService) {
+        this.chatClient = ChatClient.builder(chatModel).build();
+        this.multipleChatClientsWithSingleModelTypeService = multipleChatClientsWithSingleModelTypeService;
+    }
+
+    @GetMapping("/ai")
+    public String generation(String userInput){
+        return this.chatClient.prompt()
+                .user(userInput)
+                .call()
+                .content();
+    }
+
+    @GetMapping("/ai/multiple-chat-client-with-single-model-type")
+    public List<String> multipleChatClientsWithSingleModelType(String message){
+        return multipleChatClientsWithSingleModelTypeService.getResponseFromMultipleChatClientsWithSingleModel(message);
+    }
+}
