@@ -35,4 +35,7 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Secret Keys###
 /src/main/resources/spring-ai-study-e08977554fea.json
+/src/main/resources/application-secret.properties
