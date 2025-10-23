@@ -2,6 +2,7 @@ package com.fastcampus.springai.controller;
 
 import com.fastcampus.springai.service.ChatClientsForDiffModelTypesService;
 import com.fastcampus.springai.service.MultipleChatClientsWithSingleModelTypeService;
+import com.fastcampus.springai.service.MultipleOpenAiCompatibleApiService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,6 +17,7 @@ public class AiController {
 
     private final MultipleChatClientsWithSingleModelTypeService multipleChatClientsWithSingleModelTypeService;
     private final ChatClientsForDiffModelTypesService chatClientsForDiffModelTypesService;
+    private final MultipleOpenAiCompatibleApiService multipleOpenAiCompatibleApiService;
 
 //    public MyController(ChatClient.Builder chatClientBuilder) {
 //        this.chatClient = chatClientBuilder.build();
@@ -23,11 +25,13 @@ public class AiController {
     public AiController(
             @Qualifier("vertexAiGeminiChat") ChatModel chatModel,
             MultipleChatClientsWithSingleModelTypeService multipleChatClientsWithSingleModelTypeService,
-            ChatClientsForDiffModelTypesService chatClientsForDiffModelTypesService
+            ChatClientsForDiffModelTypesService chatClientsForDiffModelTypesService,
+            MultipleOpenAiCompatibleApiService multipleOpenAiCompatibleApiService
     ) {
         this.chatClient = ChatClient.builder(chatModel).build();
         this.multipleChatClientsWithSingleModelTypeService = multipleChatClientsWithSingleModelTypeService;
         this.chatClientsForDiffModelTypesService = chatClientsForDiffModelTypesService;
+        this.multipleOpenAiCompatibleApiService = multipleOpenAiCompatibleApiService;
     }
 
     @GetMapping("/ai")
@@ -46,5 +50,10 @@ public class AiController {
     @GetMapping("/ai/chat-clients-for-diff-model-types")
     public List<String> chatClientsForDiffModelTypes(){
         return chatClientsForDiffModelTypesService.getIntroductionOfDiffModelTypes();
+    }
+
+    @GetMapping("/ai/multiple-open-ai-compatible-api")
+    public List<String> multipleOpenAiCompatibleApi(){
+        return multipleOpenAiCompatibleApiService.multiClientFlow();
     }
 }

@@ -160,7 +160,7 @@ public class MultiModelService {
     private OpenAiChatModel baseChatModel;
 
     @Autowired
-    private OpenAiApi baseOpenAiApi;
+    private OpenAiApi baseOpenAiApi; // require bean registration in config
 
     public void multiClientFlow() {
         try {
@@ -179,7 +179,7 @@ public class MultiModelService {
             // Derive a new OpenAiChatModel for Groq
             OpenAiChatModel groqModel = baseChatModel.mutate()
                 .openAiApi(groqApi)
-                .defaultOptions(OpenAiChatOptions.builder().model("llama3-70b-8192").temperature(0.5).build())
+                .defaultOptions(OpenAiChatOptions.builder().model("llama-3.1-8b-instant").temperature(0.5).build())
                 .build();
 
             // Derive a new OpenAiChatModel for GPT-4
