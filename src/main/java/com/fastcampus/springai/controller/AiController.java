@@ -1,8 +1,10 @@
 package com.fastcampus.springai.controller;
 
+import com.fastcampus.springai.service.ChatClientsForDiffModelTypesService;
 import com.fastcampus.springai.service.MultipleChatClientsWithSingleModelTypeService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -13,13 +15,19 @@ public class AiController {
     private final ChatClient chatClient;
 
     private final MultipleChatClientsWithSingleModelTypeService multipleChatClientsWithSingleModelTypeService;
+    private final ChatClientsForDiffModelTypesService chatClientsForDiffModelTypesService;
 
 //    public MyController(ChatClient.Builder chatClientBuilder) {
 //        this.chatClient = chatClientBuilder.build();
 //    }
-    public AiController(ChatModel chatModel,  MultipleChatClientsWithSingleModelTypeService multipleChatClientsWithSingleModelTypeService) {
+    public AiController(
+            @Qualifier("vertexAiGeminiChat") ChatModel chatModel,
+            MultipleChatClientsWithSingleModelTypeService multipleChatClientsWithSingleModelTypeService,
+            ChatClientsForDiffModelTypesService chatClientsForDiffModelTypesService
+    ) {
         this.chatClient = ChatClient.builder(chatModel).build();
         this.multipleChatClientsWithSingleModelTypeService = multipleChatClientsWithSingleModelTypeService;
+        this.chatClientsForDiffModelTypesService = chatClientsForDiffModelTypesService;
     }
 
     @GetMapping("/ai")
@@ -33,5 +41,10 @@ public class AiController {
     @GetMapping("/ai/multiple-chat-client-with-single-model-type")
     public List<String> multipleChatClientsWithSingleModelType(String message){
         return multipleChatClientsWithSingleModelTypeService.getResponseFromMultipleChatClientsWithSingleModel(message);
+    }
+
+    @GetMapping("/ai/chat-clients-for-diff-model-types")
+    public List<String> chatClientsForDiffModelTypes(){
+        return chatClientsForDiffModelTypesService.getIntroductionOfDiffModelTypes();
     }
 }

@@ -1,17 +1,20 @@
 package com.fastcampus.springai.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
 
 @Service
-@RequiredArgsConstructor
 public class MultipleChatClientsWithSingleModelTypeService {
     private final ChatModel myChatModel;
+
+    public MultipleChatClientsWithSingleModelTypeService(@Qualifier("vertexAiGeminiChat") ChatModel myChatModel) {
+        this.myChatModel = myChatModel;
+    }
 
     public List<String> getResponseFromMultipleChatClientsWithSingleModel(String message) {
         ChatClient defaultChatClient = ChatClient.create(myChatModel);
