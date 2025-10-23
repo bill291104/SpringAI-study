@@ -1,16 +1,15 @@
 package com.fastcampus.springai.controller;
 
-import com.fastcampus.springai.service.ChatClientsForDiffModelTypesService;
-import com.fastcampus.springai.service.ChatResponseEntityTypeService;
-import com.fastcampus.springai.service.MultipleChatClientsWithSingleModelTypeService;
-import com.fastcampus.springai.service.MultipleOpenAiCompatibleApiService;
+import com.fastcampus.springai.service.*;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -23,6 +22,7 @@ public class AiController {
     private final ChatClientsForDiffModelTypesService chatClientsForDiffModelTypesService;
     private final MultipleOpenAiCompatibleApiService multipleOpenAiCompatibleApiService;
     private final ChatResponseEntityTypeService chatResponseEntityTypeService;
+    private final StreamingResponseService streamingResponseService;
 
 //    public MyController(ChatClient.Builder chatClientBuilder) {
 //        this.chatClient = chatClientBuilder.build();
@@ -32,13 +32,15 @@ public class AiController {
             MultipleChatClientsWithSingleModelTypeService multipleChatClientsWithSingleModelTypeService,
             ChatClientsForDiffModelTypesService chatClientsForDiffModelTypesService,
             MultipleOpenAiCompatibleApiService multipleOpenAiCompatibleApiService,
-            ChatResponseEntityTypeService chatResponseEntityTypeService
+            ChatResponseEntityTypeService chatResponseEntityTypeService,
+            StreamingResponseService streamingResponseService
     ) {
         this.chatClient = ChatClient.builder(chatModel).build();
         this.multipleChatClientsWithSingleModelTypeService = multipleChatClientsWithSingleModelTypeService;
         this.chatClientsForDiffModelTypesService = chatClientsForDiffModelTypesService;
         this.multipleOpenAiCompatibleApiService = multipleOpenAiCompatibleApiService;
         this.chatResponseEntityTypeService = chatResponseEntityTypeService;
+        this.streamingResponseService = streamingResponseService;
     }
 
     @GetMapping("")
@@ -68,5 +70,13 @@ public class AiController {
     public ResponseEntity<Void>  chatResponseEntityType(){
         chatResponseEntityTypeService.generateFilmography();
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping(
+            value = "/streaming-response",
+            produces = MediaType.TEXT_EVENT_STREAM_VALUE
+    )
+    public Flux<String> streamingResponse(){
+        return streamingResponseService.streamingResponse();
     }
 }
