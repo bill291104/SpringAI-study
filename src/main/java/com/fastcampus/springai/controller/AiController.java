@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
@@ -23,6 +24,7 @@ public class AiController {
     private final MultipleOpenAiCompatibleApiService multipleOpenAiCompatibleApiService;
     private final ChatResponseEntityTypeService chatResponseEntityTypeService;
     private final StreamingResponseService streamingResponseService;
+    private final PromptTemplateService promptTemplateService;
 
 //    public MyController(ChatClient.Builder chatClientBuilder) {
 //        this.chatClient = chatClientBuilder.build();
@@ -33,7 +35,8 @@ public class AiController {
             ChatClientsForDiffModelTypesService chatClientsForDiffModelTypesService,
             MultipleOpenAiCompatibleApiService multipleOpenAiCompatibleApiService,
             ChatResponseEntityTypeService chatResponseEntityTypeService,
-            StreamingResponseService streamingResponseService
+            StreamingResponseService streamingResponseService,
+            PromptTemplateService promptTemplateService
     ) {
         this.chatClient = ChatClient.builder(chatModel).build();
         this.multipleChatClientsWithSingleModelTypeService = multipleChatClientsWithSingleModelTypeService;
@@ -41,6 +44,7 @@ public class AiController {
         this.multipleOpenAiCompatibleApiService = multipleOpenAiCompatibleApiService;
         this.chatResponseEntityTypeService = chatResponseEntityTypeService;
         this.streamingResponseService = streamingResponseService;
+        this.promptTemplateService = promptTemplateService;
     }
 
     @GetMapping("")
@@ -78,5 +82,15 @@ public class AiController {
     )
     public Flux<String> streamingResponse(){
         return streamingResponseService.streamingResponse();
+    }
+
+    @GetMapping("/prompt-template")
+    public String promptTemplate(@RequestParam String param){
+        return promptTemplateService.makePromptTemplateWithParameter(param);
+    }
+
+    @GetMapping("/default-system-prompt")
+    public String defaultSystemPrompt(@RequestParam String user, @RequestParam String voice){
+        return promptTemplateService.defaultSystemPrompt(user, voice);
     }
 }
